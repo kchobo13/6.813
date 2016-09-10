@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<!--
+  COLLABORATORS:
+  No collaborators other than stackoverflow and quora for canvas questions.
+  
+-->
+<html>
+
+<head>
+<meta charset="UTF-8">
+<title>Checkerboard</title>
+
+<!-- Load style sheets -->
+<link rel="stylesheet" href="mainLayout.css" />
+</head>
+
+<body>
+<header id="title"> Checkers 6.813 </header>
+
+<table id="mainTable">
+    <tr>
+        <td id="navigation">
+          <table>
+			    <tr><td><div id="turn" class="black">Black Turn </div></td></tr>
+                <tr><td><input id="btnNewGame" type="button" name="new" value="New Game"/></td></tr>
+                <tr><td><input id="btnAutoMove" type="button" name="new" value="Auto Move"/></td></tr>
+                <tr><td><input id="btnUndo" type="button" name="new" value="Undo"/><td><tr>
+                <tr><td><input id="btnRedo" type="button" name="new" value="Redo"/><td><tr>    
+            </table>
+        </td>
+
+        <td id="content">
+			<canvas id="board" width="400" height ="400"></canvas>
+			<div id="pieces"></div>
+            <div id="divdraw">
+            <canvas id="arrows" width="400" height = "400"></canvas> 
+        </div>
+        </td>
+    </tr>
+
+</table>
+
+
+<!-- Load any supplemental Javascript libraries here -->
+<script type="text/javascript" src="external_js/jquery-1.9.0.min.js"></script>
+<script type="text/javascript" src="checker.js"></script>
+<script type="text/javascript" src="boardEvent.js"></script>
+<script type="text/javascript" src="board.js"></script>
+<script type="text/javascript" src="rules.js"></script>
+
+<script type="text/javascript">
+//This script extracts parameters from the URL
+//from jquery-howto.blogspot.com
+    $.extend({
+        getUrlVars : function() {
+            var vars = [], hash;
+            var hashes = window.location.href.slice(
+                    window.location.href.indexOf('?') + 1).split('&');
+            for ( var i = 0; i < hashes.length; i++) {
+                hash = hashes[i].split('=');
+                vars.push(hash[0]);
+                vars[hash[0]] = hash[1];
+            }
+            return vars;
+        },
+        getUrlVar : function(name) {
+            return $.getUrlVars()[name];
+        }
+    });
+
+    var DEFAULT_BOARD_SIZE = 8;
+
+    //data model
+    var board;
+    var rules;
+    var whoseTurn = "black";    
+
+    var directionOf = function(color) {
+        if (color == "black") {
+            return -1;
+        }
+            return 1;
+        }
+
+    // Fill in this function to toggle the display for whose turn
+    // The color parameter should be either "black" or "red"
+    var toggleTurn = function(color) {
+       if (color == "black") {
+            $("#turn").text("Red Turn");
+            $("#turn").removeClass("black");
+            $("#turn").addClass("red");
+            whoseTurn = "red";
+        } else {
+            $("#turn").text("Black Turn");
+            $("#turn").removeClass("red");
+            $("#turn").addClass("black");
+            whoseTurn = "black";
+        }
+    }
+
+
+
+    // This allows the Javascript code inside this block to only run when the page
+    // has finished loading in the browser.
+    $(document).ready(function() {
+
+        if ($.getUrlVar('size') && $.getUrlVar('size') >= 6) {
+            board = new Board($.getUrlVar('size'));
+        } else {
+            board = new Board(DEFAULT_BOARD_SIZE);
+        }
+
+
+        rules = new Rules(board);
+
+        var constant = 400.0/board.size();
+
+        //Drawing of the board
+        var canvas = document.getElementById("board");
+        var ctx = canvas.getContext("2d");
+        var w = false;
+        for (var i=0; i < board.size(); i++) {
+            w = !w;
+            for (var j=0; j< board.size(); j++) {
+                if (w) {
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(constant*j, constant*i, constant, constant);
+                    w = false;
+                }
+                else {
+                    w = true;
+                }
+            }
+        }
+
+        board.addEventListener('add',function (e) {
+            GetPieces();
+            MoveByMouse();
+        },true);
+
+        board.addEventListener('move',function (e) {
+            GetPieces();
+            MoveByMouse();
+        },true);
+
+        board.addEventListener('remove', function(e) {
+            GetPieces();
+            MoveByMouse();
+        }, true);
+
+        board.addEventListener('promote',function (e) {
+            GetPieces();
+            MoveByMouse();
+        },true);
+
+        var history = new Array();
+        var num_moves = 0;
+        $("#btnUndo").attr('disabled', 'disabled');
+        $("#btnRedo").attr('disabled', 'disabled');
+
+        //New game button functions (clear board and start over)
+        $("#btnNewGame").click(function(evt) {
+            if (whoseTurn == "red") {
+                toggleTurn(whoseTurn);
+            }
+
+            board.prepareNewGame();
+            GetPieces();
+            MoveByMouse();
+
+            var arrows = document.getElementById("arrows");
+            var arrow = arrows.getContext("2d");
+            arrow.clearRect(0,0,400,400);
+            history = new Array();
+            num_moves = 0;
+
+
+            $("#btnUndo").attr('disabled', 'disabled');
+            $("#btnRedo").attr('disabled', 'disabled');
+        });
+
+        //Calls a random move that is viable.
+        $("#btnAutoMove").click(function(evt) {
+          var playerColor = whoseTurn;
+          var playerDirection = directionOf(playerColor);
+          var result = rules.makeRandomMove(playerColor, playerDirection);
+          if (result != null) {
+            toggleTurn(playerColor);
+            DrawLine(result);
+
+            history = history.slice(0, num_moves);
+            history.push(result);
+            num_moves++;
+            $("#btnUndo").removeAttr('disabled');
+          }
+        });
+
+        $("#btnUndo").click(function(evt) {
+            if (num_moves > 0) {
+                var playerColor = whoseTurn;
+                var playerDirection = directionOf(playerColor);
+                move = history[num_moves-1];
+                num_moves--;
+                var row = move.to_row;
+                var col = move.to_col;
+                var piece = board.getCheckerAt(row, col);
+                if (piece != null) {
+                    board.moveTo(piece, move.from_row, move.from_col);
+                    DrawLine({from_row: move.to_row, from_col: move.to_col, to_row: move.from_row, to_col: move.from_col});
+                }
+
+                if (move.remove.length >0) {
+                    board.add(move.remove[0], move.remove[0].row, move.remove[0].col);
+                }
+                
+                if (move.made_king) {
+                    piece.isKing = false;
+                }
+
+                toggleTurn(playerColor);
+                $("#btnRedo").removeAttr('disabled');
+                GetPieces();
+
+            } else {
+                $("#btnUndo").attr('disabled', 'disabled');
+            }
+        });
+
+        $("#btnRedo").click(function(evt) {
+            if (num_moves < history.length) {
+                var playerColor = whoseTurn;
+                var playerDirection = directionOf(playerColor);
+                toggleTurn(playerColor);
+                move = history[num_moves];
+                num_moves++;
+                var piece = board.getCheckerAt(move.from_row, move.from_col);
+                board.moveTo(piece, move.to_row, move.to_col);
+                DrawLine({from_row: move.from_row, from_col: move.from_col, to_row: move.to_row, to_col: move.to_col});
+
+                if (move.remove.length > 0) {
+                    board.remove(move.remove[0], move.remove[0].row, move.remove[0].col);
+                }
+
+                if (move.made_king) {
+                    piece.isKing = true;
+                }
+                $("#btnUndo").removeAttr('disabled');
+
+            } else {
+                $("#btnRedo").attr('disabled', 'disabled');
+            }
+        });
+
+        board.prepareNewGame();
+
+        //This function gets the checkers pieces to where they are supposed to be
+        function GetPieces() {
+            $("#pieces").empty();
+            var pieces = board.getAllCheckers();
+
+            for (var piece in pieces) {
+                //check if piece is supposed to be king
+                if (pieces[piece].isKing) {
+                    var status = 'graphics/'+ pieces[piece].color + "-king.png";
+                }
+                else {
+                    var status = 'graphics/'+ pieces[piece].color + "-piece.png";
+                }
+
+                var checker = document.createElement('img');
+                var attributes = [ 'class', 'width', 'height', 'margin-left', 'margin-right']
+                var values = [ 'checker', constant, constant, 'auto', 'auto']
+                checker.setAttribute('src', status);
+                
+                //give the checker all attributes
+                for (var i=0; i < 4; i++) {
+                    checker.setAttribute(attributes[i], values[i]);
+                }
+                
+                checker.style.left = constant*pieces[piece].col + 'px';
+                checker.style.top = constant*pieces[piece].row + 'px';
+                $("#pieces").append(checker);
+            };
+        };
+
+        //For the Listener methods when you move a piece by the mouse
+        function MoveByMouse() {
+            var drag = false;
+            var dragprocess = null;
+            var start = null;
+            var position = $("#pieces").offset();
+            var constants = 400/board.size();
+
+            //Defined for when the mouse is clicked and held down.
+            $(".checker").mousedown( function(down) {
+                down.preventDefault();
+                dragprocess = down.target;
+                drag = true;
+
+                start = {x: down.pageX - position.left, y: down.pageY - position.top};
+                down = target.style.zIndex='500';
+
+            })
+
+            //Defined for when the held down mouse is dragged. Only applicable to the checkers piece.
+            $(".checker").mousemove( function(move) {
+                if (drag) {
+                    move.preventDefault();
+                    dragprocess.style.left = move.pageX - position.left - constants/2 + 'px';
+                    dragprocess.style.top = move.pageY - position.top - constants/2 + 'px';
+                }
+            })
+
+            //Defined for when the held down mouse is lifted
+            $(".checker").mouseup( function(up) {
+                if (drag) {
+                    up.preventDefault();
+                    drag = false;
+                    up.target.style.zIndex='10';
+
+                    var start_i = Math.floor(start.x/constants);
+                    var start_j = Math.floor(start.y/constants);
+                    var end = {x: up.pageX - position.left, y: up.pageY - position.top};
+                    var end_i = Math.floor(end.x/constant);
+                    var end_j = Math.floor(end.y/constant);
+
+                    //Check if the end square is actually possible to move the checker into
+                    if (end_i >= 0 && end_j >= 0 && end_i < board.size() && end_j < board.size() && board.isEmptyLocation(end_j, end_i)) {
+                        var checker = board.getCheckerAt(start_j, start_i);
+                        var playerTurn = whoseTurn;
+                        var player = directionOf(playerTurn);
+                        var rule = rules.makeMove(checker, directionOf(playerTurn), player, end_j, end_i);
+                        $("#btnUndo").removeAttr('disabled');
+
+                        //Make sure the square qualifies with all rules
+                        if (rule != null) {
+                            toggleTurn(playerTurn);
+                            DrawLine(rule);
+                            history = history.slice(0, num_moves);
+                            history.push(rule);
+                            num_moves++;
+                            $("#btnUndo").removeAttr('disabled');
+                        } else {
+                            dragprocess = null;
+                            up.target.style.left = start_i*constant + 'px';
+                            up.target.style.top = start_j*constant + 'px';
+                        }
+                    } else {
+                        dragprocess.style.left = start_i*constant + 'px';
+                        dragprocess.style.top = start_j*constant + 'px';
+                        dragprocess = null;
+                    }
+
+                    dragprocess = null;
+                }
+            });
+        };
+
+        //Draw the arrow into the transparent canvas
+        function DrawLine(rule) {
+            var arrow = document.getElementById("arrows");
+            var ctx2 = arrow.getContext("2d");
+            var constant = 400/board.size();
+
+            ctx2.clearRect(0,0,400,400);
+            ctx2.beginPath();
+            ctx2.lineWidth = 3;
+            ctx2.strokeStyle = "#00FFFF";
+            ctx2.fillStyle = "#00FFFF";
+
+            x_start = rule["from_col"]*constant + constant/2;
+            y_start = rule['from_row']*constant + constant/2;
+            x_end = rule['to_col']*constant + constant/2;
+            y_end = rule['to_row']*constant + constant/2;
+
+            ctx2.moveTo(x_start, y_start);
+            ctx2.lineTo(x_end, y_end);
+            ctx2.closePath();
+            ctx2.stroke();
+
+            var head_angle = Math.atan2(y_end-y_start, x_end-x_start);
+            ctx2.beginPath();
+            ctx2.moveTo(x_end, y_end);
+            ctx2.lineTo(x_end-12*Math.cos(head_angle-Math.PI/6), y_end-12*Math.sin(head_angle-Math.PI/6)); //top right line of arrow
+            ctx2.lineTo(x_end-12*Math.cos(head_angle+Math.PI/6), y_end-12*Math.sin(head_angle+Math.PI/6)); // top left line of arrow
+
+            ctx2.closePath();
+            ctx2.fill();
+            ctx2.stroke();
+        };
+    })
+</script>
+
+
+</body>
+
+</html>

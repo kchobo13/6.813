@@ -1,0 +1,73 @@
+﻿#navigation{
+	width:140px
+}
+
+#navigation table{
+	width:100%
+}
+
+#navigation input{
+	width:100%
+}
+
+#title {
+	text-align: center;
+	font-size: 72px;
+	color: magenta;
+	font-weight: bold;
+	margin-top: 10%;
+	margin-bottom: 20px;
+	padding-left: 150px;
+}
+
+#mainTable {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#content{
+	background-color:gray;
+}
+
+#turn{
+	text-align: center;
+}
+
+.black{
+	background-color: black;
+	color: white;
+}
+
+.red{
+	background-color: red;
+	color: white;
+}
+
+#board{
+	background: gray;
+	border: 1px solid black;
+}
+
+#pieces{
+	height: 400px;
+	width: 400px;
+	position: relative;
+	left: 0;
+	top: -408px;
+	margin-bottom: -410px;
+}
+
+.checker {
+	z-index: 10;
+	position: absolute;
+	display: inline-block;
+}
+
+#divdraw {
+	left: 0;
+	top: -400px;
+	margin-bottom: -400px;
+	pointer-events: none;
+	position: relative;
+	z-index: 100;
+}

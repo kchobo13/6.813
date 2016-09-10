@@ -1,0 +1,45 @@
+html {
+    background-color: #eee;
+}
+
+/* Your CSS here */
+body {
+	font-family: Trebuchet MS;
+	font-size: 25px;
+	margin-left: 5%;
+}
+
+h1 {
+	font-size: 50px;
+	color: #808080;
+	padding-bottom: 30px;
+}
+
+b {
+	color:black;
+}
+
+td {
+	padding-right: 40px;
+	padding-bottom: 5px;	
+}
+
+.section {
+	color: #808080;
+}
+
+tr#entry > td {
+	padding-bottom: 30px;
+}
+
+.correct {
+	color: blue;
+}
+
+.incorrect {
+	color: red;
+}
+
+.incorrect :nth-child(2) {
+	text-decoration: line-through;
+}

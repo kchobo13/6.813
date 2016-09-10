@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<!--
+   COLLABORATORS: None
+  I did not discuss the assignment with anyone
+  -->
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Ready, Set, Translate !</title>
+    <link href="jquery/css/ui-lightness/jquery-ui-1.10.0.custom.css" rel="stylesheet" />
+    <link href="translate_game.css" rel="stylesheet" />
+
+  </head>
+  <body>
+    <!-- Your HTML here -->
+  <h1> Translate From <b> Spanish</b> to <b>English</b> </h1>
+  
+  <!-- Set the game as a table instead of a div because it would be easier to set up 
+   -->
+  <table id="game">
+    <tr class="section">
+      <td id="spanish"></td>
+      <td id="english"></td>
+      <td>Answer</td>
+    </tr>
+    <tr id="entry">
+      <td id="word"></td>
+      <td> <input type="text" id="input"> </td>
+      <td> <input type="submit" id="submit" value="See Answer"> </td>
+    </tr>
+	
+	<!-- Start of the past entries in the translator
+	 -->
+    <tr class="correct">
+      <td> calabaza </td>
+      <td> pumpkin </td>
+      <td> <span class="ui-icon ui-icon-check"></span> </td>
+    </tr>
+    <tr class="incorrect">
+      <td> postmodernidad </td>
+      <td> phone </td>
+      <td> postmodernism </td>
+    </tr>
+  </table>
+
+    <script src="jquery/js/jquery-1.9.0.min.js"></script>
+    <script src="jquery/js/jquery-ui-1.10.0.custom.min.js"></script>
+    <script src="dicts.json"></script>
+    <script src="translate_game.js"></script>
+  </body>
+</html>
